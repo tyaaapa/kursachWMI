@@ -15,10 +15,18 @@ namespace kursachWMI
 {
     public partial class Form1 : Form
     {
+        const long KbSize = 1024;
+        const long MbSize = KbSize * 1024;
+        const long GbSize = MbSize * 1024;
+        const long TbSize = GbSize * 1024;
         public Form1()
         {
+            
+            
             InitializeComponent();
-            ManagementObjectSearcher myProcessorObject = new ManagementObjectSearcher("select * from Win32_Processor");// Процессор
+
+            
+        ManagementObjectSearcher myProcessorObject = new ManagementObjectSearcher("select * from Win32_Processor"); // Процессор
             foreach (ManagementObject obj in myProcessorObject.Get())
             {
                 procName.Text = ("Наименование  -  " + obj["Name"]);
@@ -28,55 +36,82 @@ namespace kursachWMI
                 procCash.Text = ("Размер кэша  -  " + obj["L2CacheSize"]) + " байт";
             }
 
-            ManagementObjectSearcher myVideoObject = new ManagementObjectSearcher("select * from Win32_VideoController");//Видеокарта
+            ManagementObjectSearcher myVideoObject = new ManagementObjectSearcher("select * from Win32_VideoController"); // Видеокарта
             foreach (ManagementObject obj in myVideoObject.Get())
             {
                 videoName.Text = ("Наименование  -  " + obj["Name"]);
-                videoRam.Text = ("Видеопамять  -  " + Convert.ToDouble(obj["AdapterRAM"]) / 1048576.0) + " Мб";
-                videoDAC.Text = ("Тип ЦАП  -  " + obj["AdapterDACType"]);//Цифрово-аналоговый преобразователь.
+                videoRam.Text = ("Видеопамять  -  " + Convert.ToDouble(obj["AdapterRAM"]) / GbSize + " GB");
+                videoDAC.Text = ("Тип ЦАП  -  " + obj["AdapterDACType"]); // Цифрово-аналоговый преобразователь.
                 videoDriver.Text = ("Версия драйвера  -  " + obj["DriverVersion"]);
             }
 
             getdrive();
-            void getdrive()
+
+
+            //foreach (var drive in DriveInfo.GetDrives()) // Диски
+            //{
+            //    try
+            //    { 
+            //        label1.Text = ("Имя диска: " + drive.Name);
+            //        label2.Text = ("Файловая система: " + drive.DriveFormat);
+            //        label3.Text = ("Тип диска: " + drive.DriveType);
+            //        label4.Text = ("Объем доступного свободного места: " + Convert.ToDouble(drive.AvailableFreeSpace) / 1048576.0 + " Мб");
+            //        label5.Text = ("Статус работы: " + drive.IsReady);
+            //        label6.Text = ("Корневой каталог диска: " + drive.RootDirectory);
+            //        label7.Text = ("Общий объем свободного места, доступного на диске: " + Convert.ToDouble(drive.TotalFreeSpace) / 1048576.0 + " Мб");
+            //        label8.Text = ("Размер диска: " + Convert.ToDouble(drive.TotalSize) / 1048576.0 + " Мб");
+            //        label9.Text = ("Метка тома: " + drive.VolumeLabel);
+            //    }
+            //    catch { }
+            //}
+        }
+        string GetSize(long bytes)
+        {
+            if (bytes < MbSize)
             {
-                string[] driv = Directory.GetLogicalDrives();
-                foreach (string item in driv)
-                {
-                    comboBox1.Items.Add(item.ToString());
-                }
+                return (bytes / KbSize).ToString() + " KB";
             }
-
-
-            /*foreach (var drive in DriveInfo.GetDrives())
+            else if (bytes < GbSize)
             {
-                try
-                { 
-                    label1.Text = ("Имя диска: " + drive.Name);
-                    label2.Text = ("Файловая система: " + drive.DriveFormat);
-                    label3.Text = ("Тип диска: " + drive.DriveType);
-                    label4.Text = ("Объем доступного свободного места (в байтах): " + drive.AvailableFreeSpace);
-                    label5.Text = ("Готов ли диск: " + drive.IsReady);
-                    label6.Text = ("Корневой каталог диска: " + drive.RootDirectory);
-                    label7.Text = ("Общий объем свободного места, доступного на диске (в байтах): " + drive.TotalFreeSpace);
-                    label8.Text = ("Размер диска (в байтах): " + drive.TotalSize);
-                    label9.Text = ("Метка тома диска: " + drive.VolumeLabel);
-                }
-                catch { }
-            }*/
+                return $"{bytes / MbSize} MB";
+            }
+            else if (bytes <TbSize)
+            {
+                return (bytes / GbSize).ToString() + " GB";
+            }
+            else
+            {
+                return (bytes / TbSize).ToString() + " TB";
+            }
+        }
+
+        void getdrive()
+        {
+            string[] driv = Directory.GetLogicalDrives();
+            foreach (string item in driv)
+            {
+                comboBox1.Items.Add(item.ToString());
+            }
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            foreach (var drive in DriveInfo.GetDrives())
+            int index = comboBox1.SelectedIndex;
+            var drives = DriveInfo.GetDrives();
+            var drive = drives[index];
+            if (index >= 0)
             {
-                string getinfo = comboBox1.SelectedItem.ToString();
-                DriveInfo drInfo = new DriveInfo(getinfo);
-                string Available_space = drInfo.AvailableFreeSpace.ToString();
-                string totalspace = drInfo.TotalFreeSpace.ToString();
-                string drivety = drInfo.DriveType.ToString();
-                MessageBox.Show(Available_space + " " + totalspace + " " + drivety);
+                label1.Text = ("Имя диска: " + drive.Name);
+                label2.Text = ("Файловая система: " + drive.DriveFormat);
+                label3.Text = ("Тип диска: " + drive.DriveType);
+                label4.Text = ("Объем доступного свободного места: " + GetSize(drive.AvailableFreeSpace));//Convert.ToDouble(drive.AvailableFreeSpace) / 1048576.0 + " Мб");
+                label5.Text = ("Статус работы: " + drive.IsReady);
+                label6.Text = ("Корневой каталог диска: " + drive.RootDirectory);
+                label7.Text = ("Общий объем свободного места, доступного на диске: " + GetSize(drive.TotalFreeSpace));
+                label8.Text = ("Размер диска: " + GetSize(drive.TotalSize));
+                label9.Text = ("Метка тома: " + drive.VolumeLabel);
             }
         }
+        
     }
 }
